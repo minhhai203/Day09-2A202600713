@@ -29,4 +29,5 @@ packages = [
     "tax_agent",
     "compliance_agent",
     "stages",
+    "Lab_Assignment",
 ]

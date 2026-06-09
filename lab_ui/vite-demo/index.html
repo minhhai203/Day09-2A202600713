@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab Dashboard — Legal Multi-Agent (Vite)</title>
+  </head>
+  <body>
+    <header>
+      <h1>🧪 Lab Dashboard <span>Legal Multi-Agent · A2A · Vite</span></h1>
+      <div class="header-right">
+        <div class="header-meta" id="project-root">Đang tải…</div>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Đổi giao diện sáng/tối">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-label">Tối</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav id="sidebar">
+        <div class="nav-group">Tổng quan</div>
+        <button class="tab-btn active" data-panel="overview"><span class="label">📋 Tổng quan</span></button>
+        <button class="tab-btn" data-panel="0"><span class="label">⚙️ Phần 0 — Setup</span></button>
+
+        <div class="nav-group">Stages</div>
+        <button class="tab-btn" data-panel="1"><span class="label">1 — Direct LLM</span><span class="tab-badge">✓</span></button>
+        <button class="tab-btn" data-panel="2"><span class="label">2 — RAG & Tools</span><span class="tab-badge">✓</span></button>
+        <button class="tab-btn" data-panel="3"><span class="label">3 — ReAct Agent</span><span class="tab-badge">✓</span></button>
+        <button class="tab-btn" data-panel="4"><span class="label">4 — Multi-Agent</span><span class="tab-badge">✓</span></button>
+        <button class="tab-btn" data-panel="5"><span class="label">5 — A2A Distributed</span><span class="tab-badge">✓</span></button>
+        <button class="tab-btn" data-panel="6"><span class="label">6 — Tổng kết</span><span class="tab-badge">✓</span></button>
+
+        <div class="nav-group">Bài tập</div>
+        <button class="tab-btn" data-panel="ex2"><span class="label">Exercise 2</span></button>
+        <button class="tab-btn" data-panel="ex4"><span class="label">Exercise 4</span></button>
+      </nav>
+
+      <main id="main-content">
+        <!-- Panels injected by dashboard.js -->
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

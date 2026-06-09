@@ -3,5 +3,7 @@
 LAB_PROGRESS.md
 .trace_events.jsonl
 **cache**
+lab_ui/vite-demo/node_modules
+lab_ui/vite-demo/dist
 .claude
 **SOLUTION**

@@ -99,7 +99,11 @@ Tổng kết & Q&A (15 phút)
 
 **Bắt đầu:** Đọc [CODELAB.md](CODELAB.md)
 
-**Nộp bài / báo cáo:** [SUBMISSION_REPORT.md](SUBMISSION_REPORT.md) — trace flow, fault tolerance test, latency benchmark
+**Nộp bài / báo cáo:**
+- [Lab-Solution.md](Lab-Solution.md) — đáp án bài lab trên lớp
+- [SUBMISSION_REPORT.md](SUBMISSION_REPORT.md) — trace, fault tolerance, latency
+- [Lab_Assignment/](Lab_Assignment/) — Supervisor–Workers (Day08 improvement)
+- [lab_ui/vite-demo/](lab_ui/vite-demo/) — Vite demo Stage 4/5
 
 ---
 

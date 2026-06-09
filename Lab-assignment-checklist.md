@@ -1,9 +1,28 @@
 # Checklist Assignment Files Day09
 
 ## 1. File Lab-Solution.md
-    giải quyết các bài Lab trên lớp
+Giải quyết các bài Lab trên lớp.
 
-## 2. Assignment File: Improve Agent Day08 sử dụng partern Supervisor - Workers (ít nhất 2-3 workers)
-    Tạo folder mới tên là Lab_Assignment vả đặt toàn bộ code dưới folder này.
+**✅ Hoàn thành:** [Lab-Solution.md](Lab-Solution.md)
 
-## 3. Thời điểm nộp bài: Trước 24h00 ngày hôm nay.
+## 2. Assignment File: Improve Agent Day08 sử dụng pattern Supervisor - Workers (ít nhất 2-3 workers)
+Tạo folder mới tên là `Lab_Assignment` và đặt toàn bộ code dưới folder này.
+
+**✅ Hoàn thành:** [Lab_Assignment/](Lab_Assignment/) — 3 workers (law, tax, compliance) + supervisor plan/synthesize.
+
+```bash
+uv run python Lab_Assignment/main.py
+```
+
+## 3. Bài cộng điểm — Vite demo Stage 4/5
+
+**✅ Hoàn thành:** [lab_ui/vite-demo/](lab_ui/vite-demo/)
+
+```bash
+uv run python lab_ui/server.py          # :8765
+cd lab_ui/vite-demo && npm install && npm run dev   # :5173
+```
+
+## 4. Thời điểm nộp bài: Trước 24h00 ngày hôm nay.
+
+**Bổ sung:** [SUBMISSION_REPORT.md](SUBMISSION_REPORT.md) — trace flow, fault tolerance, latency benchmark.

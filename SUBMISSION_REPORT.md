@@ -17,6 +17,9 @@
 | Bài 5.2 — Fault tolerance (Tax Agent down) | ✅ | Mục 3 bên dưới |
 | Bài 5.3 — Sửa tax prompt ngắn | ✅ | `tax_agent/graph.py` |
 | Bài cộng điểm — Latency | ✅ | Mục 4 bên dưới |
+| Bài cộng điểm — Vite demo | ✅ | `lab_ui/vite-demo/` |
+| Lab Assignment — Supervisor–Workers | ✅ | `Lab_Assignment/` |
+| Lab-Solution.md | ✅ | Đáp án bài lab trên lớp |
 
 ---
 
