@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab Dashboard — Legal Multi-Agent</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root, [data-theme="dark"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --border: #475569;
+    --text: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --accent-soft: rgba(59,130,246,.12);
+    --accent-soft-hover: rgba(59,130,246,.18);
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --terminal-bg: #0d1117;
+    --terminal-bar-bg: #161b22;
+    --terminal-border: #30363d;
+    --terminal-placeholder: #484f58;
+    --log-hover: rgba(255,255,255,.03);
+    --learn-h3: #93c5fd;
+    --code-bg: #0d1117;
+    --code-text: #ffa657;
+    --pre-text: #e6edf3;
+    --req-bg: rgba(59,130,246,.08);
+    --req-border: rgba(59,130,246,.25);
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+  }
+
+  [data-theme="light"] {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --surface2: #e2e8f0;
+    --border: #cbd5e1;
+    --text: #0f172a;
+    --text-secondary: #334155;
+    --muted: #64748b;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-soft: rgba(37,99,235,.08);
+    --accent-soft-hover: rgba(37,99,235,.14);
+    --success: #16a34a;
+    --error: #dc2626;
+    --warning: #d97706;
+    --terminal-bg: #fafbfc;
+    --terminal-bar-bg: #f1f5f9;
+    --terminal-border: #d0d7de;
+    --terminal-placeholder: #8c959f;
+    --log-hover: rgba(0,0,0,.04);
+    --learn-h3: #1d4ed8;
+    --code-bg: #f6f8fa;
+    --code-text: #953800;
+    --pre-text: #24292f;
+    --req-bg: rgba(37,99,235,.06);
+    --req-border: rgba(37,99,235,.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header h1 span { color: var(--muted); font-weight: 400; font-size: 13px; margin-left: 8px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .header-meta { font-size: 12px; color: var(--muted); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover { background: var(--border); }
+
+  /* ── Layout ── */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar tabs ── */
+  nav {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding: 8px 0;
+  }
+  .nav-group { padding: 8px 16px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: all .15s;
+    border-left: 3px solid transparent;
+  }
+  .tab-btn:hover { background: var(--surface2); color: var(--text); }
+  .tab-btn.active {
+    background: var(--accent-soft);
+    color: var(--text);
+    border-left-color: var(--accent);
+  }
+  .tab-badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(34,197,94,.15);
+    color: var(--success);
+  }
+
+  /* ── Main content ── */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .panel { display: none; flex-direction: column; gap: 20px; }
+  .panel.active { display: flex; }
+
+  .panel-header h2 { font-size: 22px; margin-bottom: 4px; }
+  .panel-header p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+  /* ── Action bar ── */
+  .action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn-secondary { background: var(--surface2); color: var(--text); }
+  .btn-secondary:hover:not(:disabled) { background: var(--border); }
+  .btn-danger { background: rgba(239,68,68,.15); color: var(--error); border: 1px solid rgba(239,68,68,.3); }
+  .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.25); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  .env-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--req-bg);
+    border: 1px solid var(--req-border);
+    border-radius: 10px;
+    font-size: 13px;
+  }
+  .env-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--text);
+  }
+  .env-toggle input { display: none; }
+  .env-switch {
+    width: 42px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    position: relative;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+  .env-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all .2s;
+  }
+  .env-toggle input:checked + .env-switch {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .env-toggle input:checked + .env-switch::after {
+    left: 20px;
+    background: #fff;
+  }
+  .env-toggle-label strong { display: block; font-size: 13px; }
+  .env-toggle-label span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .env-hint { font-size: 12px; color: var(--muted); flex: 1; min-width: 200px; }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    background: var(--surface2);
+    color: var(--muted);
+  }
+  .status-pill.running { background: rgba(59,130,246,.15); color: var(--accent); }
+  .status-pill.success { background: rgba(34,197,94,.15); color: var(--success); }
+  .status-pill.error { background: rgba(239,68,68,.15); color: var(--error); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .status-pill.running .status-dot { animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+  /* ── Service status grid (Stage 5) ── */
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .service-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .service-card .name { font-weight: 600; margin-bottom: 2px; }
+  .service-card .port { color: var(--muted); font-size: 11px; }
+  .service-card.up { border-color: rgba(34,197,94,.4); }
+  .service-card.up .indicator { color: var(--success); }
+  .service-card.down .indicator { color: var(--error); }
+
+  /* ── Trace flow (Stage 5) ── */
+  .trace-flow-wrap {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface);
+    margin-bottom: 12px;
+  }
+  .trace-flow-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--accent-soft);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .trace-flow-header strong { font-weight: 600; }
+  .trace-id-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--code-bg);
+    color: var(--code-text);
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .trace-steps {
+    padding: 12px 14px;
+    max-height: 220px;
+    overflow-y: auto;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .trace-steps:empty::before {
+    content: 'Chạy Test Client để xem luồng A2A giữa các service…';
+    color: var(--muted);
+    font-style: italic;
+  }
+  .trace-step {
+    display: flex;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    border-left: 3px solid var(--border);
+  }
+  .trace-step.hop { border-left-color: var(--accent); background: rgba(59,130,246,.06); }
+  .trace-step.node { border-left-color: #a371f7; }
+  .trace-step.parallel { border-left-color: #d29922; background: rgba(210,153,34,.08); }
+  .trace-step.done { border-left-color: var(--success); background: rgba(34,197,94,.08); }
+  .trace-step .step-icon { flex-shrink: 0; width: 18px; text-align: center; opacity: .85; }
+  .trace-step .step-body { flex: 1; min-width: 0; }
+  .trace-step .step-title { font-weight: 600; color: var(--text); }
+  .trace-step .step-meta { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+  .trace-step .step-preview {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.45;
+    font-style: italic;
+  }
+  .trace-call-graph {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    background: var(--terminal-bg);
+    overflow-x: auto;
+  }
+  .trace-call-graph .hop-line { color: var(--accent); }
+  .trace-call-graph .parallel-line { color: #d29922; }
+  .trace-summary-wrap {
+    padding: 10px 14px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--req-bg);
+  }
+  .trace-summary-wrap h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+  .trace-result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .trace-result-card .agent-name { font-weight: 600; margin-bottom: 3px; }
+  .trace-result-card .agent-preview { color: var(--text-secondary); line-height: 1.45; }
+  .trace-warning {
+    padding: 8px 14px;
+    background: rgba(210,153,34,.12);
+    border-bottom: 1px solid rgba(210,153,34,.3);
+    color: #d29922;
+    font-size: 12px;
+  }
+  .log-trace { color: #79c0ff; }
+  [data-theme="light"] .log-trace { color: #0550ae; }
+
+  /* ── Terminal log ── */
+  .terminal-wrap {
+    border: 1px solid var(--terminal-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--terminal-bg);
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: var(--terminal-bar-bg);
+    border-bottom: 1px solid var(--terminal-border);
+  }
+
+  .stage-requirements {
+    padding: 10px 16px;
+    background: var(--req-bg);
+    border-bottom: 1px solid var(--req-border);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  .stage-requirements strong {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .stage-requirements ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .stage-requirements li { margin: 3px 0; }
+  .stage-requirements li::marker { color: var(--accent); }
+  .stage-requirements.standalone {
+    border: 1px solid var(--req-border);
+    border-radius: 10px;
+    background: var(--req-bg);
+  }
+  .terminal-bar .title {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .terminal-dots { display: flex; gap: 5px; }
+  .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal-dots span:nth-child(1) { background: #ff5f57; }
+  .terminal-dots span:nth-child(2) { background: #febc2e; }
+  .terminal-dots span:nth-child(3) { background: #28c840; }
+  .terminal-actions { display: flex; gap: 6px; }
+
+  .terminal-body {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    min-height: 280px;
+    max-height: 420px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .terminal-body:empty::before {
+    content: 'Nhấn "Chạy" để xem log tại đây…';
+    color: var(--terminal-placeholder);
+    font-style: italic;
+  }
+
+  .log-line { display: block; padding: 1px 0; }
+  .log-line:hover { background: var(--log-hover); }
+  .log-ts { color: var(--terminal-placeholder); margin-right: 8px; user-select: none; }
+  [data-theme="dark"] .log-success { color: #3fb950; }
+  [data-theme="dark"] .log-error { color: #f85149; }
+  [data-theme="dark"] .log-warning { color: #d29922; }
+  [data-theme="dark"] .log-info { color: #58a6ff; }
+  [data-theme="dark"] .log-accent { color: #79c0ff; }
+  [data-theme="dark"] .log-muted { color: #8b949e; }
+  [data-theme="dark"] .log-highlight { color: #ffa657; }
+  [data-theme="dark"] .log-divider { color: #30363d; }
+  [data-theme="light"] .log-success { color: #116329; }
+  [data-theme="light"] .log-error { color: #cf222e; }
+  [data-theme="light"] .log-warning { color: #9a6700; }
+  [data-theme="light"] .log-info { color: #0969da; }
+  [data-theme="light"] .log-accent { color: #0550ae; }
+  [data-theme="light"] .log-muted { color: #656d76; }
+  [data-theme="light"] .log-highlight { color: #bc4c00; }
+  [data-theme="light"] .log-divider { color: #d0d7de; }
+
+  /* ── Learning section ── */
+  .learn-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .learn-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--accent-soft);
+    border-bottom: 1px solid transparent;
+  }
+  .learn-header:hover { background: var(--accent-soft-hover); }
+  .learn-header h3 { font-size: 14px; font-weight: 600; }
+  .learn-header .chevron { color: var(--muted); transition: transform .2s; }
+  .learn-section.open .learn-header { border-bottom-color: var(--border); }
+  .learn-section.open .chevron { transform: rotate(180deg); }
+  .learn-body {
+    display: none;
+    padding: 18px 22px;
+    font-size: 14px;
+    line-height: 1.7;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+  .learn-section.open .learn-body { display: block; }
+
+  /* Markdown styles */
+  .learn-body h2 { font-size: 18px; margin: 20px 0 10px; color: var(--text); }
+  .learn-body h2:first-child { margin-top: 0; }
+  .learn-body h3 { font-size: 15px; margin: 16px 0 8px; color: var(--learn-h3); }
+  .learn-body h4 { font-size: 14px; margin: 12px 0 6px; color: var(--muted); }
+  .learn-body p { margin: 8px 0; color: var(--text-secondary); }
+  .learn-body ul, .learn-body ol { margin: 8px 0 8px 20px; color: var(--text-secondary); }
+  .learn-body li { margin: 4px 0; }
+  .learn-body code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--code-text);
+  }
+  .learn-body pre {
+    background: var(--code-bg);
+    border: 1px solid var(--terminal-border);
+    border-radius: 8px;
+    padding: 14px;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .learn-body pre code { background: none; padding: 0; color: var(--pre-text); font-size: 12px; }
+  .learn-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .learn-body th, .learn-body td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+  }
+  .learn-body th { background: var(--surface2); }
+  .learn-body blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 8px 16px;
+    margin: 12px 0;
+    color: var(--muted);
+    background: var(--accent-soft);
+    border-radius: 0 6px 6px 0;
+  }
+  .learn-body hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .learn-body input[type=checkbox] { margin-right: 6px; accent-color: var(--accent); }
+
+  /* ── Checklist (Stage 0) ── */
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(71,85,105,.3);
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .checklist li::before { content: '✅ '; }
+
+  @media (max-width: 768px) {
+    nav { width: 60px; }
+    .tab-btn span.label { display: none; }
+    .tab-badge { display: none; }
+    main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧪 Lab Dashboard <span>Legal Multi-Agent · A2A</span></h1>
+  <div class="header-right">
+    <div class="header-meta" id="project-root">Đang tải…</div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Đổi giao diện sáng/tối">
+      <span id="theme-icon">🌙</span>
+      <span id="theme-label">Tối</span>
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="sidebar">
+    <div class="nav-group">Tổng quan</div>
+    <button class="tab-btn active" data-panel="overview"><span class="label">📋 Tổng quan</span></button>
+    <button class="tab-btn" data-panel="0"><span class="label">⚙️ Phần 0 — Setup</span></button>
+
+    <div class="nav-group">Stages</div>
+    <button class="tab-btn" data-panel="1"><span class="label">1 — Direct LLM</span><span class="tab-badge">✓</span></button>
+    <button class="tab-btn" data-panel="2"><span class="label">2 — RAG & Tools</span><span class="tab-badge">✓</span></button>
+    <button class="tab-btn" data-panel="3"><span class="label">3 — ReAct Agent</span><span class="tab-badge">✓</span></button>
+    <button class="tab-btn" data-panel="4"><span class="label">4 — Multi-Agent</span><span class="tab-badge">✓</span></button>
+    <button class="tab-btn" data-panel="5"><span class="label">5 — A2A Distributed</span><span class="tab-badge">✓</span></button>
+    <button class="tab-btn" data-panel="6"><span class="label">6 — Tổng kết</span><span class="tab-badge">✓</span></button>
+
+    <div class="nav-group">Bài tập</div>
+    <button class="tab-btn" data-panel="ex2"><span class="label">Exercise 2</span></button>
+    <button class="tab-btn" data-panel="ex4"><span class="label">Exercise 4</span></button>
+  </nav>
+
+  <main id="main-content">
+    <!-- Panels injected by JS -->
+  </main>
+</div>
+
+<script>
+const PANELS = {
+  overview: {
+    title: 'Tổng quan Lab',
+    desc: 'Tiến độ hoàn thành 7/7 phần. Chọn stage bên trái để chạy demo và xem giải thích.',
+    runId: null,
+    extra: 'overview',
+  },
+  '0': {
+    title: 'Phần 0 — Chuẩn bị môi trường',
+    desc: 'Python 3.11+, uv, dependencies, .env với OPENROUTER_API_KEY.',
+    runId: null,
+    extra: 'checklist',
+    requirements: [
+      'Python 3.11+, cài uv và chạy uv sync',
+      'Tạo .env từ .env.example, thêm OPENROUTER_API_KEY',
+      'Test Stage 1 chạy PASS trước khi sang phần sau',
+    ],
+  },
+  '1': {
+    title: 'Phần 1 — Direct LLM Calling',
+    desc: 'Gọi LLM trực tiếp qua OpenRouter. SystemMessage + HumanMessage.',
+    runId: '1',
+    cmd: 'uv run python stages/stage_1_direct_llm/main.py',
+    requirements: [
+      'Hiểu get_llm() khởi tạo ChatOpenAI qua OpenRouter',
+      'Ghép SystemMessage + HumanMessage thành messages list',
+      'Bài 1.1: đổi QUESTION sang câu hỏi pháp lý tiếng Việt',
+      'Bài 1.2: thêm temperature=0.3 trong common/llm.py',
+    ],
+  },
+  '2': {
+    title: 'Phần 2 — LLM + RAG & Tools',
+    desc: 'Function calling: @tool, LEGAL_KNOWLEDGE, bind_tools().',
+    runId: '2',
+    cmd: 'uv run python stages/stage_2_rag_tools/main.py',
+    requirements: [
+      'Tìm @tool decorator, LEGAL_KNOWLEDGE và .bind_tools()',
+      'Quan sát flow 3 bước: LLM → execute tool → LLM trả lời',
+      'Bài 2.1: thêm entry labor_law vào LEGAL_KNOWLEDGE',
+      'Bài 2.2: tạo tool check_statute_of_limitations',
+    ],
+  },
+  '3': {
+    title: 'Phần 3 — Single Agent (ReAct)',
+    desc: 'create_react_agent() — agent tự lặp Think → Act → Observe.',
+    runId: '3',
+    cmd: 'uv run python stages/stage_3_single_agent/main.py',
+    requirements: [
+      'Quan sát agent tự gọi nhiều tools (search, compliance, penalty…)',
+      'So sánh với Stage 2: không còn viết tool loop thủ công',
+      'Bài 3.1: thêm tool search_case_law',
+      'Bài 3.2: debug reasoning với astream(debug=True)',
+    ],
+  },
+  '4': {
+    title: 'Phần 4 — Multi-Agent In-Process',
+    desc: 'LangGraph StateGraph, Send() API, parallel specialists.',
+    runId: '4',
+    cmd: 'uv run python stages/stage_4_milti_agent/main.py',
+    requirements: [
+      'Phân tích LegalState, nodes và Send() API',
+      'Luồng: analyze_law → routing → [tax ∥ compliance ∥ privacy] → aggregate',
+      'Bài 4.1: thêm call_privacy_specialist',
+      'Bài 4.2: keyword routing cho data/privacy/gdpr',
+    ],
+  },
+  '5': {
+    title: 'Phần 5 — Distributed A2A System',
+    desc: '5 services: Registry + 4 agents. Khởi động services trước, rồi chạy test client.',
+    runId: '5-test',
+    isDistributed: true,
+    cmd: 'uv run python test_client.py',
+    requirements: [
+      'Khởi động 5 services: Registry (:10000) + 4 agents',
+      'Chạy test_client.py E2E — quan sát trace_id qua các hop',
+      'Bài 5.1: trace request flow qua Customer → Law → Tax/Compliance',
+      'Bài 5.2: dừng Tax Agent, test lại hành vi hệ thống',
+    ],
+  },
+  '6': {
+    title: 'Phần 6 — Tổng kết & Bài cộng điểm',
+    desc: 'Latency baseline vs optimized. Câu hỏi ôn tập và trade-offs.',
+    runId: null,
+    requirements: [
+      'Trả lời: single vs multi-agent, A2A vs REST, prevent infinite loops',
+      'Đo latency baseline (~150s) và sau tối ưu (~45s)',
+      'Bật LATENCY_OPTIMIZED=1 và LLM_MAX_TOKENS=350 khi benchmark',
+    ],
+  },
+  ex2: {
+    title: 'Exercise 2 — Tools & Knowledge Base',
+    desc: 'Thêm labor_law entry và tool check_statute_of_limitations.',
+    runId: 'ex2',
+    cmd: 'uv run python exercises/exercise_2_tools.py',
+    requirements: [
+      'Thêm entry labor_law vào LEGAL_KNOWLEDGE',
+      'Implement tool check_statute_of_limitations(case_type)',
+      'Test với câu hỏi về thời hiệu khởi kiện — output không lỗi',
+    ],
+  },
+  ex4: {
+    title: 'Exercise 4 — Privacy Agent',
+    desc: 'Thêm privacy specialist vào multi-agent graph.',
+    runId: 'ex4',
+    cmd: 'uv run python exercises/exercise_4_multiagent.py',
+    requirements: [
+      'Implement privacy_agent function xử lý data breach/GDPR',
+      'Thêm routing keyword: data, privacy, gdpr, dữ liệu',
+      'Thêm node vào graph, test 3 agents chạy song song',
+    ],
+  },
+};
+
+let sections = {};
+let activePanel = 'overview';
+let eventSources = {};
+let traceEventSource = null;
+let traceStepsSeen = new Set();
+let servicePollTimer = null;
+
+// ── Tab switching ──
+document.getElementById('sidebar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  switchPanel(btn.dataset.panel);
+});
+
+function switchPanel(id) {
+  activePanel = id;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.panel === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === id));
+  if (id === '5') startServicePolling();
+  else stopServicePolling();
+  if (id !== '5') stopTraceStream();
+}
+
+// ── Build panels ──
+function buildPanels() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = '';
+
+  for (const [id, cfg] of Object.entries(PANELS)) {
+    const panel = document.createElement('div');
+    panel.className = 'panel' + (id === activePanel ? ' active' : '');
+    panel.dataset.panel = id;
+
+    let actionHtml = '';
+    if (cfg.isDistributed) {
+      actionHtml = `
+        <div class="service-grid" id="services-${id}"></div>
+        <div class="env-options">
+          <label class="env-toggle" title="Bật trước khi khởi động services">
+            <input type="checkbox" id="latency-opt-toggle" onchange="saveLatencyPref()" />
+            <span class="env-switch"></span>
+            <span class="env-toggle-label">
+              <strong>⚡ Tối ưu latency</strong>
+              <span>LATENCY_OPTIMIZED=1 · LLM_MAX_TOKENS=350</span>
+            </span>
+          </label>
+          <span class="env-hint" id="latency-opt-hint">Tắt = baseline (~150s). Bật = optimized (~45s). Chọn trước khi nhấn Khởi động Services.</span>
+        </div>
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="startServices()">▶ Khởi động Services</button>
+          <button class="btn btn-primary" onclick="runStage('${id}')" id="run-btn-${id}">▶ Chạy Test Client</button>
+          <button class="btn btn-danger" onclick="stopServices()">⏹ Dừng Services</button>
+          <span class="status-pill" id="status-${id}"><span class="status-dot"></span> Sẵn sàng</span>
+        </div>`;
+    } else if (cfg.runId) {
+      actionHtml = `
+        <div class="action-bar">
+          <button class="btn btn-primary" onclick="runStage('${id}')" id="run-btn-${id}">▶ Chạy</button>
+          <code style="font-size:12px;color:var(--muted)">${cfg.cmd || ''}</code>
+          <span class="status-pill" id="status-${id}"><span class="status-dot"></span> Sẵn sàng</span>
+        </div>`;
+    }
+
+    const hasTerminal = cfg.runId || cfg.isDistributed;
+    panel.innerHTML = `
+      <div class="panel-header">
+        <h2>${cfg.title}</h2>
+        <p>${cfg.desc}</p>
+      </div>
+      ${!hasTerminal ? requirementsHtml(id, true) : ''}
+      ${actionHtml}
+      ${hasTerminal ? terminalHtml(id) : ''}
+      ${cfg.extra === 'checklist' ? checklistHtml() : learnSectionHtml(id)}
+    `;
+    main.appendChild(panel);
+  }
+}
+
+function requirementsHtml(id, standalone = false) {
+  const reqs = PANELS[id]?.requirements;
+  if (!reqs?.length) return '';
+  const items = reqs.map(r => `<li>${escapeHtml(r)}</li>`).join('');
+  const cls = standalone ? 'stage-requirements standalone' : 'stage-requirements';
+  return `<div class="${cls}"><strong>📋 Yêu cầu stage</strong><ul>${items}</ul></div>`;
+}
+
+function traceFlowHtml(id) {
+  return `
+    <div class="trace-flow-wrap">
+      <div class="trace-flow-header">
+        <strong>🔗 A2A Request Trace</strong>
+        <span class="trace-id-badge" id="trace-id-${id}" title="Trace ID">—</span>
+      </div>
+      <div id="trace-warning-${id}"></div>
+      <div class="trace-call-graph" id="trace-graph-${id}"></div>
+      <div class="trace-steps" id="trace-steps-${id}"></div>
+      <div class="trace-summary-wrap" id="trace-summary-${id}"></div>
+    </div>`;
+}
+
+function terminalHtml(id) {
+  const tracePanel = PANELS[id]?.isDistributed ? traceFlowHtml(id) : '';
+  return `
+    ${tracePanel}
+    <div class="terminal-wrap">
+      <div class="terminal-bar">
+        <div class="title">
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
+          Output — ${PANELS[id].title}
+        </div>
+        <div class="terminal-actions">
+          <button class="btn btn-secondary btn-sm" onclick="clearLog('${id}')">Clear</button>
+          <button class="btn btn-secondary btn-sm" onclick="copyLog('${id}')">Copy</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleAutoScroll('${id}')" id="autoscroll-${id}">Auto-scroll: ON</button>
+        </div>
+      </div>
+      ${requirementsHtml(id)}
+      <div class="terminal-body" id="log-${id}"></div>
+    </div>`;
+}
+
+function learnSectionHtml(id) {
+  if (id === 'overview') {
+    return `<div class="learn-section open" id="learn-${id}">
+      <div class="learn-header" onclick="toggleLearn('${id}')">
+        <h3>📖 Tiến độ & Lệnh chạy nhanh</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="learn-body" id="learn-body-${id}"></div>
+    </div>`;
+  }
+  return `<div class="learn-section" id="learn-${id}">
+    <div class="learn-header" onclick="toggleLearn('${id}')">
+      <h3>📖 Học tập — Câu hỏi & Giải thích</h3>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="learn-body" id="learn-body-${id}"></div>
+  </div>`;
+}
+
+function checklistHtml() {
+  return `<div class="learn-section open">
+    <div class="learn-header" onclick="toggleLearn('0')">
+      <h3>✅ Checklist chuẩn bị</h3>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="learn-body" id="learn-body-0"></div>
+  </div>`;
+}
+
+function toggleLearn(id) {
+  document.getElementById(`learn-${id}`)?.classList.toggle('open');
+}
+
+// ── Log rendering ──
+const autoScroll = {};
+
+function classifyLine(line) {
+  if (/^\[TRACE\]/i.test(line)) return 'log-trace';
+  if (/PASS|✅|success|Success|OK/i.test(line)) return 'log-success';
+  if (/error|Error|FAIL|❌|Traceback|Exception/i.test(line)) return 'log-error';
+  if (/warn|Warn|⚠|deprecated/i.test(line)) return 'log-warning';
+  if (/^Step \d|→|Latency|⏱|Connecting|Question:|Câu hỏi:/i.test(line)) return 'log-info';
+  if (/^#{1,3} |^---|^\*{3,}/.test(line)) return 'log-accent';
+  if (/^[-=]{10,}/.test(line)) return 'log-divider';
+  if (/^\s*[\[{]/.test(line) || /tool_calls|Reasoning/i.test(line)) return 'log-highlight';
+  return '';
+}
+
+function appendLog(panelId, line, isStart = false) {
+  const el = document.getElementById(`log-${panelId}`);
+  if (!el) return;
+
+  const ts = new Date().toLocaleTimeString('vi-VN', { hour12: false });
+  const cls = classifyLine(line);
+  const div = document.createElement('span');
+  div.className = 'log-line' + (cls ? ' ' + cls : '');
+  div.innerHTML = `<span class="log-ts">${ts}</span>${escapeHtml(line)}`;
+  el.appendChild(div);
+  el.appendChild(document.createTextNode('\n'));
+
+  if (autoScroll[panelId] !== false) {
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clearLog(id) {
+  const el = document.getElementById(`log-${id}`);
+  if (el) el.innerHTML = '';
+  if (id === '5') clearTraceFlow('5');
+}
+
+function clearTraceFlow(panelId) {
+  const steps = document.getElementById(`trace-steps-${panelId}`);
+  const badge = document.getElementById(`trace-id-${panelId}`);
+  const graph = document.getElementById(`trace-graph-${panelId}`);
+  const summary = document.getElementById(`trace-summary-${panelId}`);
+  const warning = document.getElementById(`trace-warning-${panelId}`);
+  if (steps) steps.innerHTML = '';
+  if (graph) graph.innerHTML = '';
+  if (summary) summary.innerHTML = '';
+  if (warning) warning.innerHTML = '';
+  if (badge) { badge.textContent = '—'; badge.title = 'Trace ID'; }
+  traceStepsSeen = new Set();
+}
+
+function renderCallGraph(summary) {
+  const hops = summary?.call_chain || [];
+  if (!hops.length) {
+    return 'Test Client ──A2A──▶ Customer (:10100) ──A2A──▶ Law (:10101)\n'
+      + '                              ├─▶ Tax (:10102)\n'
+      + '                              └─▶ Compliance (:10103)   [chưa có dữ liệu]';
+  }
+
+  const lines = [];
+  for (const hop of hops) {
+    const src = SERVICE_LABELS[hop.from] || hop.from;
+    const dst = SERVICE_LABELS[hop.to] || hop.to;
+    const port = SERVICE_PORTS[hop.to];
+    const portStr = port ? ` (:${port})` : '';
+    lines.push(`${src} ──A2A──▶ ${dst}${portStr}  [depth=${hop.depth ?? '?'}]`);
+  }
+
+  const routing = summary.routing;
+  if (routing) {
+    lines.push('');
+    lines.push(`Law routing: tax=${routing.needs_tax} · compliance=${routing.needs_compliance}`);
+  }
+  if (summary.graph_nodes?.length) {
+    lines.push(`Law graph: ${summary.graph_nodes.join(' → ')}`);
+  }
+  if (summary.latency_s != null) {
+    lines.push(`Latency: ${summary.latency_s}s · ${summary.event_count ?? 0} events`);
+  }
+  return lines.join('\n');
+}
+
+function renderAgentSummary(summary) {
+  const results = summary?.agent_results || [];
+  if (!results.length) {
+    return '<p style="color:var(--muted);font-size:12px;margin:0">Chưa có kết quả từ agents.</p>';
+  }
+  return results.map(r => {
+    const name = SERVICE_LABELS[r.service] || r.service;
+    const prev = r.preview || '(không có preview)';
+    return `<div class="trace-result-card">
+      <div class="agent-name">${escapeHtml(name)} · ${r.chars ?? 0} chars</div>
+      <div class="agent-preview">${escapeHtml(prev)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderFullTrace(panelId, events, summary) {
+  clearTraceFlow(panelId);
+
+  const badge = document.getElementById(`trace-id-${panelId}`);
+  if (badge && summary?.trace_id) {
+    badge.textContent = summary.trace_id;
+    badge.title = summary.trace_id;
+  }
+
+  const warningEl = document.getElementById(`trace-warning-${panelId}`);
+  if (warningEl && summary?.warning) {
+    warningEl.className = 'trace-warning';
+    warningEl.textContent = '⚠️ ' + summary.warning;
+  }
+
+  const graphEl = document.getElementById(`trace-graph-${panelId}`);
+  if (graphEl) graphEl.textContent = renderCallGraph(summary);
+
+  const summaryEl = document.getElementById(`trace-summary-${panelId}`);
+  if (summaryEl) {
+    summaryEl.innerHTML = `<h4>📋 Kết quả tóm tắt từng Agent</h4>${renderAgentSummary(summary)}`;
+  }
+
+  for (const evt of events) {
+    appendTraceEvent(panelId, evt, true);
+  }
+}
+
+async function refreshTracePanel(panelId) {
+  try {
+    const res = await fetch('/api/trace/events');
+    const data = await res.json();
+    renderFullTrace(panelId, data.events || [], data.summary || {});
+  } catch (_) {}
+}
+
+const SERVICE_LABELS = {
+  test_client: 'Test Client',
+  customer: 'Customer Agent',
+  law: 'Law Agent',
+  tax: 'Tax Agent',
+  compliance: 'Compliance Agent',
+  registry: 'Registry',
+};
+
+const SERVICE_PORTS = { customer: 10100, law: 10101, tax: 10102, compliance: 10103 };
+
+function formatTraceStep(evt) {
+  const svc = SERVICE_LABELS[evt.service] || evt.service;
+  const port = evt.port || SERVICE_PORTS[evt.service];
+  const portStr = port ? ` :${port}` : '';
+
+  switch (evt.event) {
+    case 'request_start':
+      return { cls: 'hop', icon: '①', title: `${svc} → Customer Agent${portStr ? ' (:10100)' : ''}`, meta: `trace=${evt.trace_id?.slice(0, 8)}… depth=${evt.depth ?? 0}` };
+    case 'agent_receive':
+      return { cls: 'hop', icon: '●', title: `${svc} nhận request`, meta: `depth=${evt.depth ?? '?'} · task=${evt.task_id?.slice(0, 8) ?? '—'}…` };
+    case 'a2a_send': {
+      const to = SERVICE_LABELS[evt.to] || evt.to;
+      const toPort = SERVICE_PORTS[evt.to] ? ` (:${SERVICE_PORTS[evt.to]})` : '';
+      return { cls: 'hop', icon: '→', title: `${svc} → ${to}${toPort} (A2A)`, meta: `depth=${evt.depth ?? '?'} · HTTP POST message/send` };
+    }
+    case 'a2a_recv': {
+      const from = SERVICE_LABELS[evt.from_agent] || evt.from_agent;
+      return {
+        cls: 'hop', icon: '←', title: `${from} trả lời về ${svc}`,
+        meta: `${evt.chars ?? 0} chars · depth=${evt.depth ?? '?'}`,
+        preview: evt.preview || '',
+      };
+    }
+    case 'graph_node':
+      return { cls: 'node', icon: '◆', title: `${svc}: node "${evt.node}"`, meta: `LangGraph in-process` };
+    case 'routing':
+      return { cls: 'node', icon: '⑂', title: `${svc} routing decision`, meta: `needs_tax=${evt.needs_tax} · needs_compliance=${evt.needs_compliance}` };
+    case 'parallel_dispatch':
+      return { cls: 'parallel', icon: '∥', title: `${svc} dispatch song song`, meta: (evt.targets || []).map(t => SERVICE_LABELS[t] || t).join('  ∥  ') };
+    case 'agent_complete':
+      return {
+        cls: 'done', icon: '✓', title: `${svc} hoàn thành`,
+        meta: `${evt.chars ?? 0} chars · depth=${evt.depth ?? '?'}`,
+        preview: evt.preview || '',
+      };
+    case 'request_complete':
+      return { cls: 'done', icon: '✓', title: 'E2E request hoàn tất', meta: `latency=${evt.latency_s}s` };
+    default:
+      return { cls: '', icon: '·', title: `${evt.event} @ ${svc}`, meta: JSON.stringify(evt).slice(0, 80) };
+  }
+}
+
+function appendTraceEvent(panelId, evt, skipDedup = false) {
+  if (!evt?.trace_id || !evt?.event) return;
+
+  const key = `${evt.ts ?? ''}:${evt.event}:${evt.service}:${evt.node || ''}:${evt.to || ''}:${evt.from_agent || ''}:${evt.depth ?? ''}`;
+  if (!skipDedup && traceStepsSeen.has(key)) return;
+  traceStepsSeen.add(key);
+
+  const badge = document.getElementById(`trace-id-${panelId}`);
+  if (badge) {
+    badge.textContent = evt.trace_id;
+    badge.title = evt.trace_id;
+  }
+
+  const steps = document.getElementById(`trace-steps-${panelId}`);
+  if (!steps) return;
+
+  const { cls, icon, title, meta, preview } = formatTraceStep(evt);
+  const previewHtml = preview
+    ? `<div class="step-preview">${escapeHtml(preview)}</div>` : '';
+  const div = document.createElement('div');
+  div.className = `trace-step ${cls}`;
+  div.innerHTML = `<span class="step-icon">${icon}</span><div class="step-body"><div class="step-title">${escapeHtml(title)}</div><div class="step-meta">${escapeHtml(meta)}</div>${previewHtml}</div>`;
+  steps.appendChild(div);
+  steps.scrollTop = steps.scrollHeight;
+}
+
+function parseTraceFromLogLine(line) {
+  const m = line.match(/^\[TRACE\]\s*(\{.*\})\s*$/);
+  if (!m) return null;
+  try { return JSON.parse(m[1]); } catch { return null; }
+}
+
+function startTraceStream(panelId) {
+  stopTraceStream();
+  clearTraceFlow(panelId);
+  traceEventSource = new EventSource('/api/trace/stream');
+  traceEventSource.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'trace' && data.event) {
+      appendTraceEvent(panelId, data.event);
+    }
+  };
+  traceEventSource.onerror = () => stopTraceStream();
+}
+
+function stopTraceStream() {
+  if (traceEventSource) {
+    traceEventSource.close();
+    traceEventSource = null;
+  }
+}
+
+function copyLog(id) {
+  const el = document.getElementById(`log-${id}`);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent);
+}
+
+function toggleAutoScroll(id) {
+  autoScroll[id] = autoScroll[id] === false;
+  const btn = document.getElementById(`autoscroll-${id}`);
+  if (btn) btn.textContent = `Auto-scroll: ${autoScroll[id] === false ? 'OFF' : 'ON'}`;
+}
+
+function setStatus(panelId, state, text) {
+  const el = document.getElementById(`status-${panelId}`);
+  if (!el) return;
+  el.className = 'status-pill ' + state;
+  el.innerHTML = `<span class="status-dot"></span> ${text}`;
+}
+
+function setRunDisabled(panelId, disabled) {
+  const btn = document.getElementById(`run-btn-${panelId}`);
+  if (btn) btn.disabled = disabled;
+}
+
+// ── Run stage via SSE ──
+function runStage(panelId) {
+  const cfg = PANELS[panelId];
+  if (!cfg?.runId) return;
+
+  if (eventSources[panelId]) {
+    eventSources[panelId].close();
+  }
+
+  clearLog(panelId);
+  autoScroll[panelId] = true;
+  setStatus(panelId, 'running', 'Đang chạy…');
+  setRunDisabled(panelId, true);
+
+  if (panelId === '5') {
+    fetch('/api/trace/clear', { method: 'POST' }).catch(() => {});
+    startTraceStream(panelId);
+  }
+
+  const es = new EventSource(`/api/run/${cfg.runId}`);
+  eventSources[panelId] = es;
+
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'start') {
+      appendLog(panelId, `$ ${data.cmd}`);
+      appendLog(panelId, '─'.repeat(60));
+    } else if (data.type === 'log') {
+      appendLog(panelId, data.line);
+      const traceEvt = parseTraceFromLogLine(data.line);
+      if (traceEvt) appendTraceEvent(panelId, traceEvt);
+    } else if (data.type === 'done') {
+      const ok = data.status === 'success';
+      setStatus(panelId, ok ? 'success' : 'error', ok ? `Hoàn thành (exit ${data.code})` : `Lỗi (exit ${data.code})`);
+      setRunDisabled(panelId, false);
+      es.close();
+      delete eventSources[panelId];
+      if (panelId === '5') {
+        stopTraceStream();
+        setTimeout(() => refreshTracePanel(panelId), 400);
+      }
+    } else if (data.type === 'error') {
+      appendLog(panelId, data.line);
+    }
+  };
+
+  es.onerror = () => {
+    setStatus(panelId, 'error', 'Mất kết nối SSE');
+    setRunDisabled(panelId, false);
+    es.close();
+  };
+}
+
+// ── Stage 5 services ──
+function isLatencyOptimized() {
+  return document.getElementById('latency-opt-toggle')?.checked ?? false;
+}
+
+function saveLatencyPref() {
+  localStorage.setItem('lab-latency-opt', isLatencyOptimized() ? '1' : '0');
+  updateLatencyHint();
+}
+
+function updateLatencyHint() {
+  const hint = document.getElementById('latency-opt-hint');
+  if (!hint) return;
+  hint.textContent = isLatencyOptimized()
+    ? '✅ Sẽ export LATENCY_OPTIMIZED=1 và LLM_MAX_TOKENS=350 khi khởi động (~45s)'
+    : '📊 Baseline — không set env tối ưu (~150s). Bật toggle nếu muốn chạy nhanh.';
+}
+
+function initLatencyPref() {
+  const saved = localStorage.getItem('lab-latency-opt');
+  const toggle = document.getElementById('latency-opt-toggle');
+  if (toggle && saved !== null) toggle.checked = saved === '1';
+  updateLatencyHint();
+}
+
+async function startServices() {
+  const optimized = isLatencyOptimized();
+  setStatus('5', 'running', 'Đang khởi động services…');
+  appendLog('5', optimized
+    ? '⚡ Env: LATENCY_OPTIMIZED=1, LLM_MAX_TOKENS=350'
+    : '📊 Env: baseline (unset LATENCY_OPTIMIZED, LLM_MAX_TOKENS)');
+  const res = await fetch('/api/services/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latency_optimized: optimized }),
+  });
+  const data = await res.json();
+  appendLog('5', `🚀 ${data.message || data.status}`);
+  if (data.pid) appendLog('5', `PID: ${data.pid}`);
+  setTimeout(refreshServices, 3000);
+}
+
+async function stopServices() {
+  const res = await fetch('/api/services/stop', { method: 'POST' });
+  const data = await res.json();
+  appendLog('5', `⏹ Đã dừng: ${data.killed.join(', ')}`);
+  setStatus('5', '', 'Sẵn sàng');
+  refreshServices();
+}
+
+async function refreshServices() {
+  try {
+    const res = await fetch('/api/services/status');
+    const data = await res.json();
+    const grid = document.getElementById('services-5');
+    if (!grid) return;
+
+    const labels = { registry: 'Registry', customer: 'Customer', law: 'Law', tax: 'Tax', compliance: 'Compliance' };
+    const ports = { registry: 10000, customer: 10100, law: 10101, tax: 10102, compliance: 10103 };
+
+    grid.innerHTML = Object.entries(labels).map(([key, name]) => {
+      const up = data.ports[key];
+      return `<div class="service-card ${up ? 'up' : 'down'}">
+        <div class="name">${name} <span class="indicator">${up ? '●' : '○'}</span></div>
+        <div class="port">:${ports[key]}</div>
+      </div>`;
+    }).join('');
+
+    if (data.all_up) setStatus('5', 'success', 'Tất cả services đang chạy');
+  } catch (_) {}
+}
+
+function startServicePolling() {
+  refreshServices();
+  servicePollTimer = setInterval(refreshServices, 5000);
+}
+
+function stopServicePolling() {
+  if (servicePollTimer) { clearInterval(servicePollTimer); servicePollTimer = null; }
+}
+
+// ── Load markdown content ──
+async function loadContent() {
+  const res = await fetch('/api/sections');
+  const data = await res.json();
+  sections = data.sections;
+  document.getElementById('project-root').textContent = data.root;
+
+  if (sections.overview) {
+    const el = document.getElementById('learn-body-overview');
+    if (el) el.innerHTML = marked.parse(sections.overview);
+  }
+
+  const learnMap = { '0':'0', '1':'1', '2':'2', '3':'3', '4':'4', '5':'5', '6':'6', ex2:'2', ex4:'4' };
+  for (const [panelId, sectionKey] of Object.entries(learnMap)) {
+    const el = document.getElementById(`learn-body-${panelId}`);
+    if (el && sections[sectionKey]) {
+      el.innerHTML = marked.parse(sections[sectionKey]);
+    }
+  }
+}
+
+// ── Theme toggle ──
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const isDark = theme === 'dark';
+  document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('theme-label').textContent = isDark ? 'Tối' : 'Sáng';
+  localStorage.setItem('lab-theme', theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('lab-theme');
+  const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+  applyTheme(saved || (prefersLight ? 'light' : 'dark'));
+}
+
+// ── Init ──
+initTheme();
+buildPanels();
+initLatencyPref();
+loadContent();
+autoScroll['1'] = autoScroll['2'] = autoScroll['3'] = autoScroll['4'] = autoScroll['5'] = true;
+autoScroll['ex2'] = autoScroll['ex4'] = true;
+</script>
+</body>
+</html>

@@ -11,6 +11,7 @@ from a2a.server.tasks import TaskUpdater
 from a2a.types import Part, TextPart
 
 from law_agent.graph import create_graph
+from common.trace_log import trace_event, preview_text
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,14 @@ class LawAgentExecutor(AgentExecutor):
         logger.info(
             "LawAgent executing | task=%s context=%s trace=%s depth=%d",
             task_id, context_id, trace_id, depth,
+        )
+        trace_event(
+            "agent_receive",
+            trace_id=trace_id,
+            service="law",
+            depth=depth,
+            task_id=task_id,
+            context_id=context_id,
         )
 
         updater = TaskUpdater(event_queue, task_id, context_id)
@@ -60,19 +69,27 @@ class LawAgentExecutor(AgentExecutor):
                 # Fallback: use law_analysis if aggregation didn't produce output
                 answer = result.get("law_analysis", "")
             if not answer:
-                answer = "I was unable to generate a legal analysis at this time."
+                answer = "Không thể tạo phân tích pháp lý lúc này. Vui lòng thử lại."
 
             await updater.add_artifact(
                 parts=[Part(root=TextPart(text=answer))],
                 name="legal_analysis",
             )
             await updater.complete()
+            trace_event(
+                "agent_complete",
+                trace_id=trace_id,
+                service="law",
+                depth=depth,
+                chars=len(answer),
+                preview=preview_text(answer),
+            )
 
         except Exception as exc:
             logger.exception("LawAgent execution error: %s", exc)
             await updater.failed(
                 updater.new_agent_message(
-                    parts=[Part(root=TextPart(text=f"Legal analysis failed: {exc}"))]
+                    parts=[Part(root=TextPart(text=f"Phân tích pháp lý thất bại: {exc}"))]
                 )
             )
 

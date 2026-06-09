@@ -99,6 +99,8 @@ Tổng kết & Q&A (15 phút)
 
 **Bắt đầu:** Đọc [CODELAB.md](CODELAB.md)
 
+**Nộp bài / báo cáo:** [SUBMISSION_REPORT.md](SUBMISSION_REPORT.md) — trace flow, fault tolerance test, latency benchmark
+
 ---
 
 ## Getting Started

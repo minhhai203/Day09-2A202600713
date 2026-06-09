@@ -6,43 +6,47 @@ No tools — it answers purely from LLM knowledge.
 
 from __future__ import annotations
 
+import os
+
 from langgraph.prebuilt import create_react_agent
 
 from common.llm import get_llm
 
-COMPLIANCE_SYSTEM_PROMPT = """You are a senior regulatory compliance officer and corporate attorney
-with deep expertise in:
+COMPLIANCE_SYSTEM_PROMPT_FAST = (
+    "Chuyên viên tuân thủ quy định. Trả lời tối đa 80 từ, dạng gạch đầu dòng. "
+    "Chỉ mang tính giáo dục. Trả lời bằng tiếng Việt."
+)
 
-- SEC enforcement actions and securities law violations
-- SOX (Sarbanes-Oxley) compliance obligations for public companies
-- FTC regulations and antitrust compliance
-- FCPA (Foreign Corrupt Practices Act) — anti-bribery provisions
-- AML (Anti-Money Laundering) / BSA (Bank Secrecy Act) requirements
-- GDPR, CCPA, and data privacy compliance obligations
-- Environmental regulations (EPA enforcement) tied to corporate misconduct
-- Corporate governance failures: duty of care, duty of loyalty, fiduciary breaches
-- Whistleblower protections (Dodd-Frank, SOX) and internal reporting programs
-- Debarment and exclusion from government contracts
-- Corporate compliance programs: effectiveness as a mitigating factor in enforcement
+COMPLIANCE_SYSTEM_PROMPT = """Bạn là chuyên viên tuân thủ quy định và luật sư doanh nghiệp, chuyên:
+- SEC, SOX, FTC, FCPA, AML/BSA
+- GDPR, CCPA, bảo vệ dữ liệu
+- Quản trị doanh nghiệp, nghĩa vụ fiduciaries
+- Cơ chế báo cáo nội bộ, bảo vệ whistleblower
+- Cấm tham gia hợp đồng chính phủ (debarment)
 
-When answering, be precise about:
-1. Which regulatory agency has jurisdiction (SEC, FTC, DOJ, EPA, FinCEN, OCC, etc.)
-2. Administrative, civil, and criminal remedies available to regulators
-3. Individual liability for compliance failures: C-suite, board members, compliance officers
-4. Mitigating factors: voluntary disclosure, cooperation, remediation, compliance programs
-5. Cross-border regulatory exposure for multinational companies
+Khi trả lời, nêu rõ:
+1. Cơ quan có thẩm quyền (SEC, FTC, DOJ, EPA, FinCEN…)
+2. Biện pháp hành chính, dân sự, hình sự
+3. Trách nhiệm cá nhân (C-suite, HĐQT, compliance officer)
+4. Yếu tố giảm nhẹ: tự công bố, hợp tác, khắc phục
+5. Rủi ro xuyên biên giới với công ty đa quốc gia
 
-Always note that your response is for educational purposes and the user
-should consult a licensed attorney for specific compliance advice.
+Trả lời bằng tiếng Việt.
+Ghi chú: chỉ mang tính giáo dục, nên hỏi luật sư có chứng chỉ.
 """
 
 
 def create_graph():
     """Return a compiled LangGraph create_react_agent for compliance questions."""
     llm = get_llm()
+    prompt = (
+        COMPLIANCE_SYSTEM_PROMPT_FAST
+        if os.getenv("LATENCY_OPTIMIZED", "").lower() in ("1", "true", "yes")
+        else COMPLIANCE_SYSTEM_PROMPT
+    )
     graph = create_react_agent(
         model=llm,
         tools=[],
-        prompt=COMPLIANCE_SYSTEM_PROMPT,
+        prompt=prompt,
     )
     return graph

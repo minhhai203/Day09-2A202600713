@@ -172,18 +172,42 @@ def check_compliance_requirements(industry: str, company_size: str) -> str:
     )
 
 
-TOOLS = [search_legal_database, calculate_penalty, check_compliance_requirements]
+@tool
+def search_case_law(keywords: str) -> str:
+    """Tìm kiếm án lệ theo từ khóa.
+
+    Args:
+        keywords: Từ khóa tìm kiếm
+    """
+    cases = {
+        "breach": "Hadley v. Baxendale (1854) - Consequential damages",
+        "negligence": "Donoghue v. Stevenson (1932) - Duty of care",
+        "contract": "Carlill v. Carbolic Smoke Ball Co (1893) - Unilateral contract",
+    }
+    for key, case in cases.items():
+        if key in keywords.lower():
+            return case
+    return "Không tìm thấy án lệ phù hợp"
+
+
+TOOLS = [
+    search_legal_database,
+    calculate_penalty,
+    check_compliance_requirements,
+    search_case_law,
+]
 
 QUESTION = (
-    "A tech startup with $5M revenue was caught sharing user data without consent "
-    "and failed to pay taxes on overseas revenue. What are all the legal consequences?"
+    "Một startup công nghệ có doanh thu 5 triệu USD bị phát hiện chia sẻ dữ liệu "
+    "người dùng không có sự đồng ý và không nộp thuế cho thu nhập từ nước ngoài. "
+    "Tất cả hậu quả pháp lý là gì?"
 )
 
 SYSTEM_PROMPT = (
-    "You are a legal analyst agent. You have access to tools for searching legal databases, "
-    "calculating penalties, and checking compliance requirements. Use these tools to build "
-    "a comprehensive analysis. Search for each legal area separately — data privacy, tax, "
-    "and compliance. Keep your final answer under 500 words."
+    "Bạn là agent phân tích pháp lý. Bạn có các công cụ tra cứu cơ sở dữ liệu pháp luật, "
+    "tính toán mức phạt và kiểm tra yêu cầu tuân thủ. Hãy dùng các công cụ này để phân tích "
+    "toàn diện. Tra cứu riêng từng lĩnh vực — bảo vệ dữ liệu, thuế và tuân thủ. "
+    "Trả lời bằng tiếng Việt, dưới 500 từ."
 )
 
 
@@ -205,18 +229,21 @@ async def main():
     print("-" * 70)
 
     llm = get_llm()
+    # verbose=True không còn trong create_react_agent mới — dùng astream bên dưới để xem reasoning
     graph = create_react_agent(model=llm, tools=TOOLS, prompt=SYSTEM_PROMPT)
 
     inputs = {"messages": [{"role": "user", "content": QUESTION}]}
 
     step = 0
-    async for chunk in graph.astream(inputs, stream_mode="updates"):
+    async for chunk in graph.astream(inputs, stream_mode="updates", debug=True):
         for node_name, update in chunk.items():
             step += 1
             messages = update.get("messages", [])
             for msg in messages:
                 if hasattr(msg, "tool_calls") and msg.tool_calls:
                     print(f"\n[Step {step}] THINK + ACT (node: {node_name})")
+                    if msg.content:
+                        print(f"  Reasoning: {msg.content[:300]}")
                     for tc in msg.tool_calls:
                         print(f"  Tool: {tc['name']}")
                         print(f"  Args: {tc['args']}")

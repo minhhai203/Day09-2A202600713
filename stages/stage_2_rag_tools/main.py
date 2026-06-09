@@ -81,6 +81,16 @@ LEGAL_KNOWLEDGE = [
             "public interest (Winter v. Natural Resources Defense Council, 2008)."
         ),
     },
+    {
+        "id": "labor_law",
+        "keywords": ["lao động", "sa thải", "hợp đồng lao động", "labor", "termination"],
+        "text": (
+            "Theo Bộ luật Lao động Việt Nam 2019, người sử dụng lao động có thể "
+            "đơn phương chấm dứt hợp đồng trong các trường hợp: (1) người lao động "
+            "thường xuyên không hoàn thành công việc; (2) bị ốm đau, tai nạn đã điều trị "
+            "12 tháng chưa khỏi; (3) thiên tai, hỏa hoạn; (4) người lao động đủ tuổi nghỉ hưu."
+        ),
+    },
 ]
 
 
@@ -135,9 +145,26 @@ def calculate_damages(breach_type: str, contract_value: float) -> str:
     )
 
 
-TOOLS = [search_legal_database, calculate_damages]
+@tool
+def check_statute_of_limitations(case_type: str) -> str:
+    """Kiểm tra thời hiệu khởi kiện theo loại vụ án.
 
-QUESTION = "What are the legal consequences if a company breaches a non-disclosure agreement?"
+    Args:
+        case_type: Loại vụ án (contract, tort, property)
+    """
+    limits = {
+        "contract": "4 năm (UCC § 2-725)",
+        "tort": "2-3 năm tùy bang",
+        "property": "5 năm",
+    }
+    return limits.get(case_type.lower(), "Không xác định")
+
+
+TOOLS = [search_legal_database, calculate_damages, check_statute_of_limitations]
+
+QUESTION = (
+    "Công ty vi phạm thỏa thuận bảo mật (NDA) sẽ phải chịu những hậu quả pháp lý nào?"
+)
 
 
 async def main():
@@ -161,10 +188,9 @@ async def main():
     messages = [
         SystemMessage(
             content=(
-                "You are a legal expert with access to a legal knowledge base and a damage "
-                "calculator. Use the tools provided to ground your analysis in specific statutes "
-                "and case law. Always search the database before answering. "
-                "Keep your final response under 400 words."
+                "Bạn là chuyên gia pháp lý, có cơ sở dữ liệu và công cụ tính thiệt hại. "
+                "Luôn tra cứu database trước khi trả lời. "
+                "Trả lời bằng tiếng Việt, dưới 400 từ."
             )
         ),
         HumanMessage(content=QUESTION),

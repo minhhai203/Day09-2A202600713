@@ -1,5 +1,7 @@
 .venv
 .env
+LAB_PROGRESS.md
+.trace_events.jsonl
 **cache**
 .claude
 **SOLUTION**

@@ -114,8 +114,10 @@ class LegalState(TypedDict):
     law_analysis: str
     needs_tax: bool
     needs_compliance: bool
+    needs_privacy: bool
     tax_result: Annotated[str, _last_wins]
     compliance_result: Annotated[str, _last_wins]
+    privacy_result: Annotated[str, _last_wins]
     final_answer: str
 
 
@@ -130,9 +132,9 @@ async def analyze_law(state: LegalState) -> dict:
     messages = [
         SystemMessage(
             content=(
-                "You are a senior corporate litigation attorney specialising in contract law, "
-                "tort law, and general business law. Analyse the legal aspects of the question "
-                "thoroughly. Keep your analysis under 200 words."
+                "Bạn là luật sư tranh tụng doanh nghiệp, chuyên hợp đồng, trách nhiệm dân sự "
+                "và luật kinh doanh. Phân tích khía cạnh pháp lý của câu hỏi. "
+                "Trả lời bằng tiếng Việt, tối đa 200 từ."
             )
         ),
         HumanMessage(content=state["question"]),
@@ -174,8 +176,21 @@ async def check_routing(state: LegalState) -> dict:
 
     needs_tax = bool(parsed.get("needs_tax", True))
     needs_compliance = bool(parsed.get("needs_compliance", True))
-    print(f"  [Node: check_routing] needs_tax={needs_tax}, needs_compliance={needs_compliance}")
-    return {"needs_tax": needs_tax, "needs_compliance": needs_compliance}
+
+    question_lower = state["question"].lower()
+    needs_privacy = any(
+        kw in question_lower for kw in ["data", "privacy", "gdpr", "dữ liệu"]
+    )
+
+    print(
+        f"  [Node: check_routing] needs_tax={needs_tax}, "
+        f"needs_compliance={needs_compliance}, needs_privacy={needs_privacy}"
+    )
+    return {
+        "needs_tax": needs_tax,
+        "needs_compliance": needs_compliance,
+        "needs_privacy": needs_privacy,
+    }
 
 
 def route_to_specialists(state: LegalState) -> list[Send]:
@@ -185,6 +200,8 @@ def route_to_specialists(state: LegalState) -> list[Send]:
         sends.append(Send("call_tax_specialist", state))
     if state.get("needs_compliance"):
         sends.append(Send("call_compliance_specialist", state))
+    if state.get("needs_privacy"):
+        sends.append(Send("call_privacy_specialist", state))
     if not sends:
         sends.append(Send("aggregate", state))
     return sends
@@ -198,10 +215,9 @@ async def call_tax_specialist(state: LegalState) -> dict:
 
     # Reuse the tax system prompt from tax_agent/graph.py
     tax_prompt = (
-        "You are a specialist tax attorney and CPA with expertise in corporate tax law, "
-        "tax evasion vs. avoidance, IRS enforcement, penalties under IRC §§ 6651/6662/6663, "
-        "FBAR/FATCA requirements, and tax fraud statutes (18 U.S.C. § 7201-7207). "
-        "Use the search_tax_law tool to ground your analysis. Keep your response under 200 words."
+        "Bạn là luật sư thuế và CPA, chuyên luật thuế doanh nghiệp, trốn thuế, "
+        "IRS, IRC §§ 6651/6662/6663, FBAR/FATCA và 18 U.S.C. § 7201-7207. "
+        "Dùng search_tax_law để tra cứu. Trả lời bằng tiếng Việt, tối đa 200 từ."
     )
 
     llm = get_llm()
@@ -213,6 +229,21 @@ async def call_tax_specialist(state: LegalState) -> dict:
     return {"tax_result": final_msg}
 
 
+async def call_privacy_specialist(state: LegalState) -> dict:
+    """Privacy specialist sub-agent — GDPR and data protection."""
+    print("\n  [Node: call_privacy_specialist] Privacy specialist agent starting...")
+    llm = get_llm()
+    prompt = f"""Bạn là chuyên gia về GDPR và luật bảo vệ dữ liệu cá nhân.
+
+Câu hỏi gốc: {state['question']}
+Phân tích pháp lý: {state.get('law_analysis', 'N/A')}
+
+Hãy phân tích các vấn đề về privacy và GDPR (nếu có). Trả lời bằng tiếng Việt, dưới 200 từ."""
+    result = await llm.ainvoke([HumanMessage(content=prompt)])
+    print(f"  [Node: call_privacy_specialist] Done ({len(result.content)} chars)")
+    return {"privacy_result": result.content}
+
+
 async def call_compliance_specialist(state: LegalState) -> dict:
     """Compliance specialist sub-agent (runs as inline ReAct agent)."""
     from langgraph.prebuilt import create_react_agent
@@ -221,9 +252,9 @@ async def call_compliance_specialist(state: LegalState) -> dict:
 
     # Reuse the compliance system prompt from compliance_agent/graph.py
     compliance_prompt = (
-        "You are a senior regulatory compliance officer with expertise in SEC enforcement, "
-        "SOX compliance, FTC regulations, FCPA, AML/BSA, GDPR, CCPA, and corporate governance. "
-        "Use the search_compliance_law tool to ground your analysis. Keep your response under 200 words."
+        "Bạn là chuyên viên tuân thủ quy định, chuyên SEC, SOX, FTC, FCPA, AML/BSA, "
+        "GDPR, CCPA và quản trị doanh nghiệp. Dùng search_compliance_law để tra cứu. "
+        "Trả lời bằng tiếng Việt, tối đa 200 từ."
     )
 
     llm = get_llm()
@@ -242,21 +273,22 @@ async def aggregate(state: LegalState) -> dict:
 
     sections: list[str] = []
     if state.get("law_analysis"):
-        sections.append(f"## Legal Analysis\n{state['law_analysis']}")
+        sections.append(f"## Phân tích pháp lý\n{state['law_analysis']}")
     if state.get("tax_result"):
-        sections.append(f"## Tax Analysis\n{state['tax_result']}")
+        sections.append(f"## Phân tích thuế\n{state['tax_result']}")
     if state.get("compliance_result"):
-        sections.append(f"## Regulatory Compliance Analysis\n{state['compliance_result']}")
+        sections.append(f"## Phân tích tuân thủ quy định\n{state['compliance_result']}")
+    if state.get("privacy_result"):
+        sections.append(f"## Phân tích Privacy & GDPR\n{state['privacy_result']}")
 
     combined = "\n\n---\n\n".join(sections)
 
     messages = [
         SystemMessage(
             content=(
-                "You are a senior legal counsel synthesising specialist analyses into a "
-                "comprehensive, well-structured response. Combine the following analyses "
-                "into a cohesive answer with clear sections. Avoid redundancy. "
-                "Keep your response under 500 words."
+                "Bạn là cố vấn pháp lý cấp cao, tổng hợp các phân tích chuyên môn thành "
+                "câu trả lời mạch lạc, có tiêu đề rõ ràng, tránh lặp. "
+                "Trả lời bằng tiếng Việt, tối đa 500 từ."
             )
         ),
         HumanMessage(content=combined),
@@ -278,6 +310,7 @@ def create_graph():
     graph.add_node("check_routing", check_routing)
     graph.add_node("call_tax_specialist", call_tax_specialist)
     graph.add_node("call_compliance_specialist", call_compliance_specialist)
+    graph.add_node("call_privacy_specialist", call_privacy_specialist)
     graph.add_node("aggregate", aggregate)
 
     graph.set_entry_point("analyze_law")
@@ -285,16 +318,25 @@ def create_graph():
     graph.add_conditional_edges(
         "check_routing",
         route_to_specialists,
-        ["call_tax_specialist", "call_compliance_specialist", "aggregate"],
+        [
+            "call_tax_specialist",
+            "call_compliance_specialist",
+            "call_privacy_specialist",
+            "aggregate",
+        ],
     )
     graph.add_edge("call_tax_specialist", "aggregate")
     graph.add_edge("call_compliance_specialist", "aggregate")
+    graph.add_edge("call_privacy_specialist", "aggregate")
     graph.add_edge("aggregate", END)
 
     return graph.compile()
 
 
-QUESTION = "If a company breaks a contract and avoids taxes, what are the legal and regulatory consequences?"
+QUESTION = (
+    "Nếu một công ty vi phạm hợp đồng và trốn thuế, "
+    "hậu quả pháp lý và tuân thủ quy định là gì?"
+)
 
 
 async def main():
@@ -311,7 +353,7 @@ async def main():
     print("[Graph topology]")
     print("  analyze_law -> check_routing -> [call_tax + call_compliance] -> aggregate -> END")
     print()
-    print(f"Question: {QUESTION}")
+    print(f"Câu hỏi: {QUESTION}")
     print("-" * 70)
 
     graph = create_graph()
@@ -321,13 +363,15 @@ async def main():
         "law_analysis": "",
         "needs_tax": False,
         "needs_compliance": False,
+        "needs_privacy": False,
         "tax_result": "",
         "compliance_result": "",
+        "privacy_result": "",
         "final_answer": "",
     })
 
     print("\n" + "=" * 70)
-    print("FINAL ANSWER")
+    print("KẾT QUẢ CUỐI CÙNG")
     print("=" * 70)
     print(result["final_answer"])
 

@@ -21,20 +21,17 @@ from common.llm import get_llm
 
 logger = logging.getLogger(__name__)
 
-CUSTOMER_SYSTEM_PROMPT = """You are a helpful legal assistant at the front desk of a multi-agent
-legal services platform. Your job is to:
+CUSTOMER_SYSTEM_PROMPT = """Bạn là trợ lý pháp lý tại quầy lễ tân của hệ thống multi-agent.
 
-1. Understand the user's legal question
-2. Determine if it needs specialist legal analysis (contract issues, tax law,
-   regulatory compliance, corporate liability, etc.)
-3. If so, use the `delegate_to_legal_agent` tool to send it to the Law Agent,
-   which will coordinate specialist sub-agents (Tax and Compliance) as needed
-4. Present the comprehensive response clearly to the user
+Nhiệm vụ:
+1. Hiểu câu hỏi pháp lý của người dùng
+2. Với câu hỏi cần phân tích chuyên sâu (hợp đồng, thuế, tuân thủ, trách nhiệm doanh nghiệp…),
+   dùng tool `delegate_to_legal_agent` gửi sang Law Agent
+3. Trình bày câu trả lời tổng hợp rõ ràng cho người dùng
 
-Always use the `delegate_to_legal_agent` tool for any substantive legal question.
-Do not attempt to answer complex legal questions from your own knowledge alone.
-
-Be professional, clear, and make the specialist response accessible to the user.
+Luôn dùng `delegate_to_legal_agent` với câu hỏi pháp lý phức tạp.
+Không tự trả lời từ kiến thức nội bộ khi cần chuyên gia.
+Trả lời bằng tiếng Việt, chuyên nghiệp và dễ hiểu.
 """
 
 
@@ -79,13 +76,14 @@ def build_graph(trace_id: str, context_id: str, depth: int) -> Any:
                 context_id=context_id,
                 trace_id=trace_id,
                 depth=depth + 1,
+                from_service="customer",
             )
             if not result:
-                return "The Law Agent returned an empty response. Please try again."
+                return "Law Agent trả về rỗng. Vui lòng thử lại."
             return result
         except Exception as exc:
             logger.exception("delegate_to_legal_agent failed: %s", exc)
-            return f"Could not reach the Law Agent: {exc}"
+            return f"Không thể kết nối Law Agent: {exc}"
 
     llm = get_llm()
     graph = create_react_agent(

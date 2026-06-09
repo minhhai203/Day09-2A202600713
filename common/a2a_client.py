@@ -22,6 +22,8 @@ from a2a.types import (
     TextPart,
 )
 
+from common.trace_log import preview_text
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +33,7 @@ async def delegate(
     context_id: str,
     trace_id: str,
     depth: int,
+    from_service: str = "unknown",
 ) -> str:
     """Send a question to an A2A agent and return the text response.
 
@@ -45,6 +48,19 @@ async def delegate(
         The agent's text response, or an empty string if none could be extracted.
     """
     async with httpx.AsyncClient(timeout=300.0) as http_client:
+        from common.trace_log import endpoint_to_service, trace_event
+
+        to_service = endpoint_to_service(endpoint)
+        trace_event(
+            "a2a_send",
+            trace_id=trace_id,
+            service=from_service,
+            to=to_service,
+            endpoint=endpoint,
+            depth=depth,
+            context_id=context_id,
+        )
+
         # Fetch agent card
         card_url = f"{endpoint}/.well-known/agent.json"
         card_resp = await http_client.get(card_url)
@@ -78,8 +94,19 @@ async def delegate(
 
         response = await client.send_message(request)
 
+        result_text = _extract_text(response)
+        trace_event(
+            "a2a_recv",
+            trace_id=trace_id,
+            service=from_service,
+            from_agent=to_service,
+            depth=depth,
+            chars=len(result_text),
+            preview=preview_text(result_text),
+        )
+
         # Extract text from SendMessageResponse
-        return _extract_text(response)
+        return result_text
 
 
 def _extract_text(response: object) -> str:
