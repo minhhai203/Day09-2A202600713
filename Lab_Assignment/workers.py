@@ -1,68 +1,75 @@
-"""Specialist worker nodes for the Supervisor–Workers graph."""
+"""3 Workers — cải tiến Day08 monolithic RAG (Task 9 + 10)."""
 
 from __future__ import annotations
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from Lab_Assignment.generation import generate_from_chunks
+from Lab_Assignment.retrieval_helpers import (
+    merge_worker_chunks,
+    retrieve_for_type,
+    retrieve_hybrid_full,
+)
 
-from common.llm import get_llm
+
+def _chunk_key(item: dict) -> str:
+    return (item.get("content") or "")[:120]
 
 
-async def law_worker(state: dict) -> dict:
-    """Worker 1 — contract, tort, general business law."""
-    llm = get_llm()
-    messages = [
-        SystemMessage(
-            content=(
-                "Bạn là luật sư doanh nghiệp. Phân tích khía cạnh pháp lý (hợp đồng, trách nhiệm). "
-                "Trả lời bằng tiếng Việt, tối đa 150 từ."
-            )
-        ),
-        HumanMessage(content=state["question"]),
+def legal_worker(state: dict) -> dict:
+    """Worker 1 — retrieval chuyên văn bản pháp luật (legal/)."""
+    chunks = retrieve_for_type(state["question"], "legal", top_k=5)
+    return {
+        "legal_chunks": chunks,
+        "worker_logs": [f"legal_worker: {len(chunks)} chunks"],
+    }
+
+
+def news_worker(state: dict) -> dict:
+    """Worker 2 — retrieval chuyên tin tức / nghệ sĩ (news/)."""
+    chunks = retrieve_for_type(state["question"], "news", top_k=5)
+    return {
+        "news_chunks": chunks,
+        "worker_logs": [f"news_worker: {len(chunks)} chunks"],
+    }
+
+
+def hybrid_worker(state: dict) -> dict:
+    """Worker 3 — full hybrid pipeline Task 9 (fallback / câu hỏi phức tạp)."""
+    chunks = retrieve_hybrid_full(state["question"], top_k=5)
+    return {
+        "hybrid_chunks": chunks,
+        "worker_logs": [f"hybrid_worker: {len(chunks)} chunks"],
+    }
+
+
+def supervisor_merge(state: dict) -> dict:
+    """Supervisor merge chunks từ các workers + rerank."""
+    lists = [
+        state.get("legal_chunks") or [],
+        state.get("news_chunks") or [],
+        state.get("hybrid_chunks") or [],
     ]
-    result = await llm.ainvoke(messages)
-    return {"law_result": result.content}
+    merged = merge_worker_chunks(state["question"], lists, top_k=5)
+    logs = list(state.get("worker_logs") or [])
+    logs.append(f"supervisor_merge: {len(merged)} chunks sau rerank")
+    return {"merged_chunks": merged, "worker_logs": logs}
 
 
-async def tax_worker(state: dict) -> dict:
-    """Worker 2 — tax law, IRS, penalties."""
-    llm = get_llm()
-    context = state.get("law_result", "")
-    messages = [
-        SystemMessage(
-            content=(
-                "Bạn là luật sư thuế. Phân tích khía cạnh thuế (IRS, trốn thuế, phạt). "
-                "Trả lời bằng tiếng Việt, tối đa 150 từ."
-            )
-        ),
-        HumanMessage(
-            content=f"Câu hỏi: {state['question']}\n\nPhân tích pháp lý (tham khảo):\n{context or 'N/A'}"
-        ),
-    ]
-    result = await llm.ainvoke(messages)
-    return {"tax_result": result.content}
+def generation_worker(state: dict) -> dict:
+    """Worker generation — Task 10, dùng chunks đã merge."""
+    result = generate_from_chunks(state["question"], state.get("merged_chunks") or [])
+    logs = list(state.get("worker_logs") or [])
+    logs.append(f"generation_worker: mode={result.get('generation_mode')}")
+    return {
+        "final_answer": result["answer"],
+        "sources": result["sources"],
+        "metadata": {
+            "workers_plan": state.get("workers_plan", []),
+            "retrieval_source": result.get("retrieval_source"),
+            "generation_mode": result.get("generation_mode"),
+            "source_count": len(result.get("sources") or []),
+            "worker_logs": logs,
+        },
+    }
 
 
-async def compliance_worker(state: dict) -> dict:
-    """Worker 3 — SEC, SOX, GDPR, regulatory compliance."""
-    llm = get_llm()
-    context = state.get("law_result", "")
-    messages = [
-        SystemMessage(
-            content=(
-                "Bạn là chuyên viên tuân thủ (SEC, SOX, GDPR, AML). "
-                "Trả lời bằng tiếng Việt, tối đa 150 từ."
-            )
-        ),
-        HumanMessage(
-            content=f"Câu hỏi: {state['question']}\n\nPhân tích pháp lý (tham khảo):\n{context or 'N/A'}"
-        ),
-    ]
-    result = await llm.ainvoke(messages)
-    return {"compliance_result": result.content}
-
-
-WORKER_NODES = {
-    "law": law_worker,
-    "tax": tax_worker,
-    "compliance": compliance_worker,
-}
+WORKER_NODE_NAMES = ("legal_worker", "news_worker", "hybrid_worker")

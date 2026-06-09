@@ -8,7 +8,7 @@ Giải quyết các bài Lab trên lớp.
 ## 2. Assignment File: Improve Agent Day08 sử dụng pattern Supervisor - Workers (ít nhất 2-3 workers)
 Tạo folder mới tên là `Lab_Assignment` và đặt toàn bộ code dưới folder này.
 
-**✅ Hoàn thành:** [Lab_Assignment/](Lab_Assignment/) — 3 workers (law, tax, compliance) + supervisor plan/synthesize.
+**✅ Hoàn thành:** [Lab_Assignment/](Lab_Assignment/) — cải tiến Day08 RAG (`2A202600713_DangMinhHai`) với 3 workers: legal, news, hybrid + generation.
 
 ```bash
 uv run python Lab_Assignment/main.py

@@ -18,7 +18,7 @@
 | Bài 5.3 — Sửa tax prompt ngắn | ✅ | `tax_agent/graph.py` |
 | Bài cộng điểm — Latency | ✅ | Mục 4 bên dưới |
 | Bài cộng điểm — Vite demo | ✅ | `lab_ui/vite-demo/` |
-| Lab Assignment — Supervisor–Workers | ✅ | `Lab_Assignment/` |
+| Lab Assignment — Supervisor–Workers | ✅ | `Lab_Assignment/` (Day08 RAG 2A202600713) |
 | Lab-Solution.md | ✅ | Đáp án bài lab trên lớp |
 
 ---
